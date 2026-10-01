@@ -209,6 +209,7 @@ int main(void)
 
     notify_msg(msg);
     last_notify_ts = time(0);
+    int notify_count = 1;  /* first notification sent */
 
     printf("OK PIN\n");
     printf("slot=%d\n", slot);
@@ -221,7 +222,9 @@ int main(void)
 
     /*
      * Keep the payload alive while pairing is active.
-     * Resend the notification every 30 seconds.
+     * Send the PIN notification 10 times over the first 60 seconds
+     * (every ~6s) in case the user misses the initial one.
+     * Then normal behavior (but we stop frequent after 10).
      */
     end_time = time(0) + 300;
 
@@ -248,10 +251,10 @@ int main(void)
             }
 
             /*
-             * Resend the PIN only every 60 seconds.
-             * The first notification is sent immediately after the PIN is generated.
+             * Resend the PIN notification frequently at the start:
+             * target 10 sends over ~60 seconds.
              */
-            if ((now - last_notify_ts) >= 60) {
+            if ((now - last_notify_ts) >= 6 && notify_count < 10) {
                 snprintf(
                     msg,
                     sizeof(msg),
@@ -264,6 +267,7 @@ int main(void)
 
                 notify_msg(msg);
                 last_notify_ts = now;
+                notify_count++;
             }
 
             if (pair_stat == 3) {
